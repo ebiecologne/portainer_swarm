@@ -12,4 +12,6 @@ chmod 600 content/acme.json
 ` ` `
 
 * deploy portainer with traefik:
-` ` ` docker stack deploy -c docker-compose.traefik.portainer.yml portainer` ` ` 
+` ` `
+docker stack deploy -c docker-compose.traefik.portainer.yml portainer
+` ` ` 
