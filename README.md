@@ -10,6 +10,9 @@ touch content/acme.json
 chmod 600 content/acme.json
 ```
 
+* create overlay-network '''traefik_network''':
+```docker network create --driver overlay --attachable traefik_network```
+
 * deploy portainer with traefik:
 ```
 docker stack deploy -c docker-compose.traefik.portainer.yml portainer
