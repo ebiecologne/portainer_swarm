@@ -1,0 +1,82 @@
+version: '3.7'
+
+services:
+
+  traefik:
+    image: traefik # The official Traefik docker image
+    command: >
+      --api
+      --docker
+      --docker.watch
+      --loglevel=DEBUG
+      --docker.swarmmode
+    ports:
+      - "80:80"     # The HTTP port
+      - "4443:4443"     # The HTTP port
+      - "8080:8080" # The Web UI (enabled by --api)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # So that Traefik 
+      - /srv/docker/swarm/portainerio/content/traefik.toml:/traefik.toml
+      - /srv/docker/swarm/portainerio/content/acme.json:/acme.json
+      - /srv/docker/swarm/portainerio/logs/traefik.log:/traefik.log
+      - /srv/docker/swarm/portainerio/logs/access.log:/access.log
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.role == manager
+    networks:
+      - traefik_network
+
+  agent:
+    image: portainer/agent:latest
+    environment:
+      AGENT_CLUSTER_ADDR: tasks.agent
+    ports:
+      - target: 9001
+        published: 9001
+        protocol: tcp
+        mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+    networks:
+      - agent_network
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.platform.os == linux]
+
+  portainer:
+    image: portainer/portainer:latest
+    command: -H tcp://tasks.agent:9001 --tlsskipverify
+    # command: ["-H", "tcp://tasks.agent:9001", "--tlsskipverify", "--no-auth"]
+    ports:
+      - "9000:9000"
+    volumes:
+      - /srv/docker/volumes/portainer:/data
+    networks:
+      - agent_network
+      - traefik_network
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        traefik.port: '9000' 
+        traefik.enable: 'true'
+        traefik.frontend.rule: 'Host:6.dck.7i.de'
+        traefik.backend: 'portainer'
+        traefik.docker.network: 'traefik_network'
+
+networks:
+  agent_network:
+    driver: overlay
+    attachable: true
+  traefik_network:
+    #  driver: overlay
+    #attachable: true
+
+# https://github.com/containous/traefik/issues/2700
+# https://docs.traefik.io/configuration/backends/docker/#on-containers
