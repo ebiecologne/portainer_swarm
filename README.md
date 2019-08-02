@@ -11,7 +11,9 @@ chmod 600 content/acme.json
 ```
 
 * create overlay-network '''traefik_network''':
-```docker network create --driver overlay --attachable traefik_network```
+```
+docker network create --driver overlay --attachable traefik_network
+```
 
 * deploy portainer with traefik:
 ```
